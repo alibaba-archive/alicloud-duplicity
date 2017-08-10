@@ -1,0 +1,129 @@
+#!/usr/bin/env python2
+# -*- Mode:Python; indent-tabs-mode:nil; tab-width:4 -*-
+#
+# Copyright 2002 Ben Escoto <ben@emerose.org>
+# Copyright 2007 Kenneth Loafman <kenneth@loafman.com>
+#
+# This file is part of duplicity.
+#
+# Duplicity is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
+#
+# Duplicity is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with duplicity; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+import os
+import re
+import shutil
+import time
+import sys
+from subprocess import Popen, PIPE, STDOUT
+sys.path.insert(0, os.path.abspath("./"))
+
+from duplicity import util
+
+SourceDir = "duplicity"
+
+
+def VersionedCopy(source, dest):
+    """
+    Copy source to dest, substituting $version with version
+    $reldate with today's date, i.e. December 28, 2008.
+    """
+    fin = open(source, "rb")
+    inbuf = fin.read()
+    assert not fin.close()
+
+    (outbuf, cnt) = re.subn("\$version", Version, inbuf)
+    assert cnt != 0, "No $version string replaced in" + source
+
+    inbuf = outbuf
+    (outbuf, cnt) = re.subn("\$reldate", Reldate, inbuf)
+
+    fout = open(dest, "wb")
+    fout.write(outbuf)
+    assert not fout.close()
+
+
+def MakeTar():
+    """Create duplicity tar file"""
+    tardir = "duplicity-%s" % Version
+    tarfile = "duplicity-%s.tar.gz" % Version
+    try:
+        os.system("rm -rf " + tardir)
+    except OSError:
+        pass
+
+    # tarball contains the entire versioned release
+    os.mkdir(tardir)
+    bzr = Popen(["bzr", "ls", "-RV", "."], stdout=PIPE)
+    testfiles = bzr.communicate()[0].split()
+    if len(testfiles) == 0:
+        git = Popen(["git", "ls-files"], stdout=PIPE)
+        testfiles = git.communicate()[0].split()
+
+    for filename in testfiles:
+        pname, fname = os.path.split(filename)
+        pathname = os.path.join(tardir, pname)
+        if not os.path.exists(pathname):
+            os.makedirs(pathname)
+        if fname:
+            assert not os.system("cp -p %s %s" % (filename, pathname)), fname + " to " + pathname
+
+    # msgfmt the translation files that we have for release
+    assert not os.system("cd po && ./update-pot")
+    linguas = open('po/LINGUAS').readlines()
+    for line in linguas:
+        langs = line.split()
+        for lang in langs:
+            assert not os.mkdir(os.path.join(tardir, "po", lang)), lang
+            assert not os.system("cp po/%s.po %s/po/%s" % (lang, tardir, lang)), lang
+            assert not os.system("msgfmt po/%s.po -o %s/po/%s/duplicity.mo" % (lang, tardir, lang)), lang
+
+    # recopy the versioned files and add correct version
+    VersionedCopy(os.path.join(SourceDir, "globals.py"),
+                  os.path.join(tardir, "duplicity", "globals.py"))
+    VersionedCopy(os.path.join("bin", "duplicity"),
+                  os.path.join(tardir, "bin", "duplicity"))
+    VersionedCopy(os.path.join("bin", "rdiffdir"),
+                  os.path.join(tardir, "bin", "rdiffdir"))
+    VersionedCopy(os.path.join("bin", "duplicity.1"),
+                  os.path.join(tardir, "bin", "duplicity.1"))
+    VersionedCopy(os.path.join("bin", "rdiffdir.1"),
+                  os.path.join(tardir, "bin", "rdiffdir.1"))
+    VersionedCopy("setup.py",
+                  os.path.join(tardir, "setup.py"))
+
+    # make sure executables are
+    os.chmod(os.path.join(tardir, "setup.py"), 0755)
+    os.chmod(os.path.join(tardir, "bin", "duplicity"), 0755)
+    os.chmod(os.path.join(tardir, "bin", "rdiffdir"), 0755)
+
+    # set COPYFILE_DISABLE to disable appledouble file creation
+    os.environ['COPYFILE_DISABLE'] = 'true'
+
+    # make the tarball and clean up
+    os.system("tar -czf %s %s" % (tarfile, tardir))
+    shutil.rmtree(tardir)
+    return tarfile
+
+def Main():
+    print "Processing version " + Version
+    tarfile = MakeTar()
+    print "Made tar file " + tarfile
+
+if __name__ == "__main__" and not globals().has_key('__no_execute__'):
+    if len(sys.argv) != 2:
+        print "Syntax: makedist [version_number]"
+        sys.exit(1)
+    Version = sys.argv[1]
+    Reldate = time.strftime("%B %d, %Y", time.localtime())
+    Main()
