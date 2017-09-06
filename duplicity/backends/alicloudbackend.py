@@ -166,7 +166,7 @@ class AliCloudBackend(duplicity.backend.Backend):
 
         log.Debug("You have not set environment variables, use the configuration file %s instead." % config_filename)
         if not os.path.exists(config_filename):
-            raise BackendException("Please set Endpoint, AccessKeyId, AccessKeySecret in the enviroment variables or in the configuration file ~/.alicloud.cfg.")
+            raise BackendException("Please set Endpoint, AccessKeyId, AccessKeySecret in the enviroment variables or in the configuration file %s." % config_filename)
         
         try:
             import configparser
@@ -181,7 +181,7 @@ class AliCloudBackend(duplicity.backend.Backend):
         self.access_key_secret = cfgparser.get("oss", "access_key_secret")
 
         if self.endpoint == '' or self.access_key_id == '' or self.access_key_secret == '':
-            raise BackendException("AliCloud OSS Endpoint or AccessKeyId or AccessKeySecret in ~/.alicloud.cfg are invalid.")
+            raise BackendException("AliCloud OSS Endpoint or AccessKeyId or AccessKeySecret in %s are invalid." % config_filename)
         return
 
 duplicity.backend.register_backend("oss", AliCloudBackend)
