@@ -888,15 +888,15 @@ def usage():
 
     # TRANSL: Header in usage help
     msg = """
-  duplicity [full|incremental] [%(options)s] %(source_dir)s %(target_url)s
-  duplicity [restore] [%(options)s] %(source_url)s %(target_dir)s
-  duplicity verify [%(options)s] %(source_url)s %(target_dir)s
-  duplicity collection-status [%(options)s] %(target_url)s
-  duplicity list-current-files [%(options)s] %(target_url)s
-  duplicity cleanup [%(options)s] %(target_url)s
-  duplicity remove-older-than %(time)s [%(options)s] %(target_url)s
-  duplicity remove-all-but-n-full %(count)s [%(options)s] %(target_url)s
-  duplicity remove-all-inc-of-but-n-full %(count)s [%(options)s] %(target_url)s
+  alicloud-duplicity [full|incremental] [%(options)s] %(source_dir)s %(target_url)s
+  alicloud-duplicity [restore] [%(options)s] %(source_url)s %(target_dir)s
+  alicloud-duplicity verify [%(options)s] %(source_url)s %(target_dir)s
+  alicloud-duplicity collection-status [%(options)s] %(target_url)s
+  alicloud-duplicity list-current-files [%(options)s] %(target_url)s
+  alicloud-duplicity cleanup [%(options)s] %(target_url)s
+  alicloud-duplicity remove-older-than %(time)s [%(options)s] %(target_url)s
+  alicloud-duplicity remove-all-but-n-full %(count)s [%(options)s] %(target_url)s
+  alicloud-duplicity remove-all-inc-of-but-n-full %(count)s [%(options)s] %(target_url)s
 
 """ % dict
 
@@ -911,6 +911,7 @@ def usage():
   rsync://%(user)s[:%(password)s]@%(other_host)s[:%(port)s]::/%(module)s/%(some_dir)s
   rsync://%(user)s[:%(password)s]@%(other_host)s[:%(port)s]/%(relative_path)s
   rsync://%(user)s[:%(password)s]@%(other_host)s[:%(port)s]//%(absolute_path)s
+  oss://%(bucket_name)s[/%(prefix)s]
   s3://%(other_host)s[:%(port)s]/%(bucket_name)s[/%(prefix)s]
   s3+http://%(bucket_name)s[/%(prefix)s]
   scp://%(user)s[:%(password)s]@%(other_host)s[:%(port)s]/%(some_dir)s
